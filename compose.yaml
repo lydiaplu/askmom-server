@@ -1,0 +1,85 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: askmom-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
+    ports:
+      - "3306:3306"
+    volumes:
+      - askmom_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-change-me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build:
+      context: ./askmom-user-service
+    container_name: askmom-user-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/user_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
+      AUTH_TOKEN_JWT_SECRET: ${JWT_SECRET:-bXlEZXZlbG9wbWVudEp3dFNlY3JldEtleU15RGV2ZWxvcG1lbnRKd3RTZWNyZXRLZXk=}
+      AUTH_TOKEN_EXPIRATION_IN_MILS: ${JWT_EXPIRATION_IN_MILS:-86400000}
+    ports:
+      - "9180:9180"
+
+  maternal-service:
+    build:
+      context: ./askmom-maternal-service
+    container_name: askmom-maternal-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/maternal_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
+      AUTH_TOKEN_JWT_SECRET: ${JWT_SECRET:-bXlEZXZlbG9wbWVudEp3dFNlY3JldEtleU15RGV2ZWxvcG1lbnRKd3RTZWNyZXRLZXk=}
+      AUTH_TOKEN_EXPIRATION_IN_MILS: ${JWT_EXPIRATION_IN_MILS:-86400000}
+    ports:
+      - "9181:9181"
+
+  baby-service:
+    build:
+      context: ./askmom-baby-service
+    container_name: askmom-baby-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/baby_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
+      AUTH_TOKEN_JWT_SECRET: ${JWT_SECRET:-bXlEZXZlbG9wbWVudEp3dFNlY3JldEtleU15RGV2ZWxvcG1lbnRKd3RTZWNyZXRLZXk=}
+      AUTH_TOKEN_EXPIRATION_IN_MILS: ${JWT_EXPIRATION_IN_MILS:-86400000}
+    ports:
+      - "9182:9182"
+
+  api-gateway:
+    build:
+      context: ./askmom-api-gateway
+    container_name: askmom-api-gateway
+    depends_on:
+      - user-service
+      - maternal-service
+      - baby-service
+    environment:
+      USER_SERVICE_URI: http://user-service:9180
+      MATERNAL_SERVICE_URI: http://maternal-service:9181
+      BABY_SERVICE_URI: http://baby-service:9182
+    ports:
+      - "9000:9000"
+
+volumes:
+  askmom_mysql_data:

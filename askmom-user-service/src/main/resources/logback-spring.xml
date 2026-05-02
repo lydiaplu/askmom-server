@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback 日志配置（Spring Boot）
+  作用：按运行环境（profile）切换日志输出格式
+-->
+<configuration scan="true">
+
+    <!--
+      从 Spring 配置读取应用名，供日志变量 ${APP_NAME} 使用
+      若未配置 spring.application.name，则默认 askmom-user-service
+    -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="askmom-user-service"/>
+    <!--
+      读取当前激活环境，供日志变量 ${ACTIVE_PROFILE} 使用
+      若未配置 spring.profiles.active，则默认 local
+    -->
+    <springProperty scope="context" name="ACTIVE_PROFILE" source="spring.profiles.active" defaultValue="local"/>
+
+    <!-- 本地/默认环境：输出易读文本日志，便于本地调试 -->
+    <springProfile name="local,default">
+        <!-- 控制台输出器 -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <!--
+                  文本日志格式：
+                  时间 [线程] 级别 Logger - 消息
+                -->
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 根日志级别：INFO 及以上；输出到 CONSOLE -->
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <!-- Spring 相关日志级别 -->
+        <logger name="org.springframework" level="INFO"/>
+        <!-- 本地环境开启 SQL DEBUG，便于排查数据库语句 -->
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+    </springProfile>
+
+    <!-- 开发/生产环境：输出结构化 JSON，便于日志平台采集和检索 -->
+    <springProfile name="dev,prod">
+        <!-- 控制台输出器（JSON 格式） -->
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <!-- 使用 logstash 编码器把日志事件组装为 JSON -->
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <!-- 日志时间 -->
+                    <timestamp>
+                        <fieldName>timestamp</fieldName>
+                        <pattern>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</pattern>
+                    </timestamp>
+                    <!-- 日志级别 -->
+                    <logLevel>
+                        <fieldName>level</fieldName>
+                    </logLevel>
+                    <!-- 线程名 -->
+                    <threadName>
+                        <fieldName>thread</fieldName>
+                    </threadName>
+                    <!-- Logger 名称 -->
+                    <loggerName>
+                        <fieldName>logger</fieldName>
+                    </loggerName>
+                    <!-- 日志正文 -->
+                    <message>
+                        <fieldName>message</fieldName>
+                    </message>
+
+                    <!--
+                      MDC 白名单：只输出这些上下文字段，避免无关数据过多
+                      常用于链路追踪和请求定位
+                    -->
+                    <mdc>
+                        <includeMdcKeyName>traceId</includeMdcKeyName>
+                        <includeMdcKeyName>requestId</includeMdcKeyName>
+                        <includeMdcKeyName>path</includeMdcKeyName>
+                        <includeMdcKeyName>method</includeMdcKeyName>
+                        <includeMdcKeyName>userId</includeMdcKeyName>
+                    </mdc>
+
+                    <!-- 异常堆栈信息 -->
+                    <stackTrace>
+                        <fieldName>stackTrace</fieldName>
+                    </stackTrace>
+                    <!-- 每条日志附加固定字段：服务名 + 环境 -->
+                    <globalCustomFields>{"service":"${APP_NAME}","env":"${ACTIVE_PROFILE}"}</globalCustomFields>
+                </providers>
+            </encoder>
+        </appender>
+
+        <!-- 根日志级别：INFO 及以上；输出到 JSON_CONSOLE -->
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+
+        <!-- Spring 相关日志级别 -->
+        <logger name="org.springframework" level="INFO"/>
+        <!-- dev/prod 降低 SQL 日志级别，减少日志噪音 -->
+        <logger name="org.hibernate.SQL" level="INFO"/>
+    </springProfile>
+
+</configuration>

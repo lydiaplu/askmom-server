@@ -1,0 +1,40 @@
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Build output
+target/
+build/
+dist/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+*.iws
+*.iml
+*.ipr
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+.vscode/
+
+# Logs and runtime files
+*.log
+logs/
+
+# Local backup archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+

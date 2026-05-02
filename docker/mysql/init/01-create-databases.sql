@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS user_service_db;
+CREATE DATABASE IF NOT EXISTS maternal_service_db;
+CREATE DATABASE IF NOT EXISTS baby_service_db;
