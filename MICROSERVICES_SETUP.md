@@ -10,7 +10,7 @@ Client
       -> askmom-user-service :9180
       -> askmom-maternal-service :9181
       -> askmom-baby-service :9182
-  -> mysql :3306
+  -> mysql :3306 inside Docker
 ```
 
 ## Gateway Routes

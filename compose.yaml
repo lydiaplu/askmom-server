@@ -4,8 +4,6 @@ services:
     container_name: askmom-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
-    ports:
-      - "3306:3306"
     volumes:
       - askmom_mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
